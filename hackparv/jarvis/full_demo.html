@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Computer Control - Live Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .status-card h3 {
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .status-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .status-online {
+            color: #10b981;
+        }
+
+        .status-offline {
+            color: #ef4444;
+        }
+
+        .main-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .command-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cmd-button {
+            padding: 20px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border: 3px solid #e5e7eb;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .cmd-button:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .cmd-button:active {
+            transform: translateY(-1px);
+        }
+
+        .cmd-button.executing {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            border-color: #fbbf24;
+            animation: executing 1s ease-in-out infinite;
+        }
+
+        @keyframes executing {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .custom-command {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .custom-command input {
+            flex: 1;
+            padding: 18px 25px;
+            border: 3px solid #e5e7eb;
+            border-radius: 15px;
+            font-size: 18px;
+            transition: border-color 0.3s;
+        }
+
+        .custom-command input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .execute-btn {
+            padding: 18px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .execute-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .execute-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .activity-panel {
+            background: #1f2937;
+            border-radius: 15px;
+            padding: 25px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .activity-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #374151;
+            color: #e5e7eb;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-time {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        .activity-command {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .activity-action {
+            color: #34d399;
+        }
+
+        .activity-success {
+            color: #10b981;
+        }
+
+        .activity-error {
+            color: #f87171;
+        }
+
+        .demo-instructions {
+            background: #fef3c7;
+            border: 3px solid #fbbf24;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .demo-instructions h3 {
+            color: #92400e;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .demo-instructions p {
+            color: #78350f;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .demo-instructions strong {
+            color: #92400e;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Computer Control</h1>
+            <p class="subtitle">Live Demo for Judges</p>
+            <p style="color: #999; margin-top: 10px;">Voice + Vision + Action</p>
+        </div>
+
+        <div class="demo-instructions">
+            <h3>🎯 How This Demo Works</h3>
+            <p>
+                <strong>Click any button below</strong> to send a command to the AI.<br>
+                The AI will analyze your screen and control your computer to execute the command.<br>
+                <strong>Watch your desktop</strong> - apps will open automatically!
+            </p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-card">
+                <h3>Assistant API</h3>
+                <div class="status-value" id="apiStatus">
+                    <span class="status-offline">Checking...</span>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>Control API</h3>
+                <div class="status-value" id="controlStatus">
+                    <span class="status-offline">Checking...</span>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>Commands Executed</h3>
+                <div class="status-value" style="color: #667eea;" id="commandCount">0</div>
+            </div>
+        </div>
+
+        <div class="main-panel">
+            <div class="command-section">
+                <div class="section-title">⚡ Quick Commands (Click to Execute)</div>
+                
+                <div class="command-grid">
+                    <button class="cmd-button" onclick="runCommand('open Finder')">
+                        📁 Open Finder
+                    </button>
+                    <button class="cmd-button" onclick="runCommand('open Safari')">
+                        🌐 Open Safari
+                    </button>
+                    <button class="cmd-button" onclick="runCommand('open Notes')">
+                        📝 Open Notes
+                    </button>
+                    <button class="cmd-button" onclick="runCommand('open Calendar')">
+                        📅 Open Calendar
+                    </button>
+                    <button class="cmd-button" onclick="runCommand('open Terminal')">
+                        💻 Open Terminal
+                    </button>
+                    <button class="cmd-button" onclick="runCommand('open Mail')">
+                        📧 Open Mail
+                    </button>
+                </div>
+
+                <div class="custom-command">
+                    <input 
+                        type="text" 
+                        id="customInput" 
+                        placeholder="Or type your own command..."
+                        onkeypress="if(event.key==='Enter') executeCustom()"
+                    >
+                    <button class="execute-btn" id="executeBtn" onclick="executeCustom()">
+                        Execute
+                    </button>
+                </div>
+            </div>
+
+            <div class="section-title">📊 Live Activity Log</div>
+            <div class="activity-panel" id="activityLog">
+                <div class="activity-item">
+                    <span class="activity-time">[System]</span>
+                    <span>Demo interface ready. Click a command to start!</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let commandCount = 0;
+        let currentlyExecuting = false;
+
+        // Check API statuses
+        async function checkStatuses() {
+            // Check Assistant API
+            try {
+                const response = await fetch('http://localhost:4001/health');
+                if (response.ok) {
+                    document.getElementById('apiStatus').innerHTML = 
+                        '<span class="status-online">● Online</span>';
+                } else {
+                    throw new Error('Not ready');
+                }
+            } catch {
+                document.getElementById('apiStatus').innerHTML = 
+                    '<span class="status-offline">● Offline</span>';
+            }
+
+            // Check Control API
+            try {
+                const response = await fetch('http://localhost:4002/health');
+                if (response.ok) {
+                    document.getElementById('controlStatus').innerHTML = 
+                        '<span class="status-online">● Online</span>';
+                } else {
+                    throw new Error('Not ready');
+                }
+            } catch {
+                document.getElementById('controlStatus').innerHTML = 
+                    '<span class="status-offline">● Offline</span>';
+                addLog('⚠️ Control API offline. Start with: node server/computer_control_api.js', 'error');
+            }
+        }
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('activityLog');
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'command' ? 'activity-command' :
+                            type === 'action' ? 'activity-action' :
+                            type === 'success' ? 'activity-success' :
+                            type === 'error' ? 'activity-error' : '';
+            
+            item.innerHTML = `
+                <span class="activity-time">[${time}]</span>
+                <span class="${className}">${message}</span>
+            `;
+            
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function runCommand(command) {
+            if (currentlyExecuting) {
+                addLog('⚠️ Please wait for current command to finish', 'error');
+                return;
+            }
+
+            currentlyExecuting = true;
+            document.getElementById('executeBtn').disabled = true;
+
+            addLog(`🎯 Executing: "${command}"`, 'command');
+            addLog('📸 AI capturing screenshot...', 'action');
+            addLog('🧠 GPT-4 Vision analyzing...', 'action');
+
+            try {
+                const response = await fetch('http://localhost:4002/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    addLog('✅ Command executed successfully!', 'success');
+                    
+                    // Parse output for actions
+                    if (result.output) {
+                        const lines = result.output.split('\n');
+                        lines.forEach(line => {
+                            if (line.includes('Action:')) {
+                                addLog(`   ${line.trim()}`, 'action');
+                            } else if (line.includes('Objective Complete')) {
+                                addLog(`   ${line.trim()}`, 'success');
+                            }
+                        });
+                    }
+                    
+                    commandCount++;
+                    document.getElementById('commandCount').textContent = commandCount;
+                } else {
+                    addLog(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ Failed to execute: ${error.message}`, 'error');
+                addLog('💡 Make sure Control API is running on port 4002', 'error');
+            }
+
+            currentlyExecuting = false;
+            document.getElementById('executeBtn').disabled = false;
+        }
+
+        function executeCustom() {
+            const input = document.getElementById('customInput');
+            const command = input.value.trim();
+            
+            if (command) {
+                runCommand(command);
+                input.value = '';
+            }
+        }
+
+        // Initialize
+        checkStatuses();
+        setInterval(checkStatuses, 10000);
+
+        // Show ready message
+        setTimeout(() => {
+            addLog('👋 Click any button to see AI control your computer!', 'success');
+        }, 1000);
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Assistant</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(to bottom right, #f3f4f6, #d1d5db);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: 100%;
+      padding: 20px;
+    }
+
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .welcome-screen h1 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1f2937;
+    }
+
+    .btn {
+      padding: 16px 32px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: white;
+      border: none;
+      border-radius: 9999px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 15px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-blue {
+      background-color: #2563eb;
+    }
+
+    .btn-blue:hover {
+      background-color: #1d4ed8;
+    }
+
+    .btn-green {
+      background-color: #10b981;
+    }
+
+    .btn-green:hover {
+      background-color: #059669;
+    }
+
+    .btn-red {
+      background-color: #ef4444;
+    }
+
+    .btn-red:hover {
+      background-color: #dc2626;
+    }
+
+    .connected-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .close-btn {
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      padding: 12px 24px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: white;
+      background-color: #ef4444;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .close-btn:hover {
+      background-color: #dc2626;
+    }
+
+    .visualizations {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .viz-container {
+      padding: 16px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    canvas {
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .loader {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .loader-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: #2563eb;
+      animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes ping {
+      75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    .loader-text {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #inputVisualizer {
+      width: 300px;
+      height: 100px;
+    }
+
+    #outputVisualizer {
+      width: 500px;
+      height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="welcome-screen">
+      <h1>Welcome to the Assistant</h1>
+      <button class="btn btn-blue" onclick="connectToAssistant()">
+        Connect to Assistant
+      </button>
+    </div>
+
+    <!-- Connected Screen -->
+    <div id="connectedScreen" class="connected-screen hidden">
+      <button id="recordBtn" class="btn btn-green" onclick="toggleRecording()">
+        Start Recording
+      </button>
+
+      <button class="close-btn" onclick="closeConnection()">
+        Close Connection
+      </button>
+
+      <!-- Visualizations -->
+      <div class="visualizations">
+        <div class="viz-container">
+          <canvas id="inputVisualizer"></canvas>
+        </div>
+        <canvas id="outputVisualizer"></canvas>
+      </div>
+
+      <!-- Loader -->
+      <div id="loader" class="loader hidden">
+        <div class="loader-dot"></div>
+        <span class="loader-text">Assistant is Thinking...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let socket = null;
+    let isConnected = false;
+    let isRecording = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioDataQueue = [];
+    let isResponsePlaying = false;
+    let inputAnimationId = null;
+    let outputAnimationId = null;
+
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const connectedScreen = document.getElementById('connectedScreen');
+    const recordBtn = document.getElementById('recordBtn');
+    const loader = document.getElementById('loader');
+    const inputCanvas = document.getElementById('inputVisualizer');
+    const outputCanvas = document.getElementById('outputVisualizer');
+
+    function connectToAssistant() {
+      const ws = new WebSocket('ws://localhost:4000/Assistant');
+      
+      ws.onopen = () => {
+        console.log('Connected to WebSocket server');
+        isConnected = true;
+        welcomeScreen.classList.add('hidden');
+        connectedScreen.classList.remove('hidden');
+      };
+
+      ws.onmessage = async (event) => {
+        const message = event.data;
+        
+        if (isJsonString(message)) {
+          try {
+            const jsonMessage = JSON.parse(message);
+            if (jsonMessage.type === 'response.done') {
+              isResponsePlaying = false;
+              loader.classList.add('hidden');
+              
+              for (let i = 0; i < audioDataQueue.length; i++) {
+                await playAudioFromArrayBuffer(audioDataQueue[i]);
+              }
+            }
+          } catch (error) {
+            console.error('Error parsing JSON:', error);
+          }
+        } else {
+          if (event.data instanceof Blob) {
+            const arrayBuffer = await event.data.arrayBuffer();
+            audioDataQueue.push(arrayBuffer);
+          }
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket connection closed');
+        isConnected = false;
+        connectedScreen.classList.add('hidden');
+        welcomeScreen.classList.remove('hidden');
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      socket = ws;
+    }
+
+    function closeConnection() {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+
+    async function toggleRecording() {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        await startRecording();
+      }
+    }
+
+    async function startRecording() {
+      isRecording = true;
+      audioChunks = [];
+      recordBtn.textContent = 'Stop Recording';
+      recordBtn.classList.remove('btn-green');
+      recordBtn.classList.add('btn-red');
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.start();
+
+        // Visualize input audio
+        visualizeInputStream(stream);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          console.log('Recording stopped');
+          processAudio();
+          
+          // Stop input visualization
+          if (inputAnimationId) {
+            cancelAnimationFrame(inputAnimationId);
+          }
+          
+          // Stop all tracks
+          stream.getTracks().forEach(track => track.stop());
+        };
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        resetRecordingState();
+      }
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      isResponsePlaying = true;
+      loader.classList.remove('hidden');
+      resetRecordingState();
+    }
+
+    function resetRecordingState() {
+      recordBtn.textContent = 'Start Recording';
+      recordBtn.classList.remove('btn-red');
+      recordBtn.classList.add('btn-green');
+    }
+
+    function visualizeInputStream(stream) {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      
+      source.connect(analyser);
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      const ctx = inputCanvas.getContext('2d');
+      
+      function draw() {
+        if (!isRecording) return;
+        
+        inputAnimationId = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+        
+        ctx.clearRect(0, 0, inputCanvas.width, inputCanvas.height);
+        
+        const barWidth = (inputCanvas.width / bufferLength) * 2.5;
+        let x = 0;
+        
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = dataArray[i] / 2;
+          ctx.fillStyle = 'rgb(16, 185, 129)';
+          ctx.fillRect(x, inputCanvas.height - barHeight, barWidth, barHeight);
+          x += barWidth + 1;
+        }
+      }
+      
+      draw();
+    }
+
+    async function processAudio() {
+      const blob = new Blob(audioChunks, { type: 'audio/wav' });
+      const processedBase64Audio = await convertBlobToPCM16Mono24kHz(blob);
+
+      if (!processedBase64Audio) {
+        console.error('Audio processing failed.');
+        return;
+      }
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        audioDataQueue = [];
+        
+        const conversationCreateEvent = {
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [
+              {
+                type: 'input_audio',
+                audio: processedBase64Audio,
+              },
+            ],
+          },
+        };
+        socket.send(JSON.stringify(conversationCreateEvent));
+
+        const responseCreateEvent = {
+          type: 'response.create',
+          response: {
+            modalities: ['text', 'audio'],
+          },
+        };
+        socket.send(JSON.stringify(responseCreateEvent));
+      } else {
+        console.error('WebSocket is not open.');
+      }
+    }
+
+    async function convertBlobToPCM16Mono24kHz(blob) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: 24000,
+        });
+
+        const arrayBuffer = await blob.arrayBuffer();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        let channelData = audioBuffer.numberOfChannels > 1
+          ? averageChannels(audioBuffer.getChannelData(0), audioBuffer.getChannelData(1))
+          : audioBuffer.getChannelData(0);
+
+        const pcm16Buffer = float32ToPCM16(channelData);
+        const base64Audio = arrayBufferToBase64(pcm16Buffer);
+
+        audioCtx.close();
+        return base64Audio;
+      } catch (error) {
+        console.error('Error processing audio:', error);
+        return null;
+      }
+    }
+
+    function averageChannels(channel1, channel2) {
+      const length = Math.min(channel1.length, channel2.length);
+      const result = new Float32Array(length);
+      for (let i = 0; i < length; i++) {
+        result[i] = (channel1[i] + channel2[i]) / 2;
+      }
+      return result;
+    }
+
+    function float32ToPCM16(float32Array) {
+      const buffer = new ArrayBuffer(float32Array.length * 2);
+      const view = new DataView(buffer);
+      for (let i = 0; i < float32Array.length; i++) {
+        let s = Math.max(-1, Math.min(1, float32Array[i]));
+        s = s < 0 ? s * 0x8000 : s * 0x7fff;
+        view.setInt16(i * 2, s, true);
+      }
+      return buffer;
+    }
+
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      const length = bytes.byteLength;
+      for (let i = 0; i < length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return window.btoa(binary);
+    }
+
+    function playAudioFromArrayBuffer(audioBuffer) {
+      return new Promise((resolve, reject) => {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        audioContext.decodeAudioData(
+          audioBuffer,
+          (buffer) => {
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            const ctx = outputCanvas.getContext('2d');
+            
+            function draw() {
+              analyser.getByteFrequencyData(dataArray);
+              
+              ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+              
+              const barWidth = (outputCanvas.width / bufferLength) * 2.5;
+              let x = 0;
+              
+              for (let i = 0; i < bufferLength; i++) {
+                const barHeight = dataArray[i];
+                ctx.fillStyle = 'rgb(150, 150, 255)';
+                ctx.fillRect(x, outputCanvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+              }
+              
+              if (source.buffer) {
+                outputAnimationId = requestAnimationFrame(draw);
+              }
+            }
+
+            draw();
+
+            source.onended = () => {
+              if (outputAnimationId) {
+                cancelAnimationFrame(outputAnimationId);
+              }
+              ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+              resolve();
+            };
+
+            source.start(0);
+          },
+          (error) => {
+            reject('Error decoding audio data: ' + error);
+          }
+        );
+      });
+    }
+
+    function isJsonString(str) {
+      try {
+        JSON.parse(str);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+  </script>
+</body>
+</html>

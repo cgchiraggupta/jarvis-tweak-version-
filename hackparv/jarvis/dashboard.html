@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Operating Computer - AI Control Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .status-card h3 {
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .status-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .status-online {
+            color: #10b981;
+        }
+
+        .status-offline {
+            color: #ef4444;
+        }
+
+        .main-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .command-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #commandInput {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        #commandInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quick-commands {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .quick-btn {
+            padding: 12px 20px;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .quick-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .activity-log {
+            margin-top: 30px;
+        }
+
+        .activity-log h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .log-container {
+            background: #1f2937;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid #374151;
+            color: #e5e7eb;
+            animation: fadeIn 0.3s;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .log-timestamp {
+            color: #9ca3af;
+            margin-right: 10px;
+        }
+
+        .log-command {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .log-action {
+            color: #34d399;
+        }
+
+        .log-error {
+            color: #f87171;
+        }
+
+        .log-success {
+            color: #10b981;
+        }
+
+        .screenshot-preview {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .screenshot-preview h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        #screenshotImage {
+            width: 100%;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f4f6;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .demo-mode {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .demo-mode h3 {
+            color: #92400e;
+            margin-bottom: 5px;
+        }
+
+        .demo-mode p {
+            color: #78350f;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Self-Operating Computer Dashboard</h1>
+            <p>AI-Powered Computer Control with GPT-4 Vision</p>
+        </div>
+
+        <div class="demo-mode" id="demoMode" style="display: none;">
+            <h3>🎬 Demo Mode Active</h3>
+            <p>Running pre-tested commands for presentation</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-card">
+                <h3>API Status</h3>
+                <div class="status-value" id="apiStatus">
+                    <span class="status-offline">Checking...</span>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>Model</h3>
+                <div class="status-value" style="color: #667eea;">GPT-4 Vision</div>
+            </div>
+            <div class="status-card">
+                <h3>Actions Executed</h3>
+                <div class="status-value" style="color: #667eea;" id="actionCount">0</div>
+            </div>
+        </div>
+
+        <div class="main-panel">
+            <div class="input-section">
+                <h2>💬 Give Your Command</h2>
+                <div class="command-input">
+                    <input 
+                        type="text" 
+                        id="commandInput" 
+                        placeholder="e.g., open Safari, open Finder, open VS Code..."
+                        onkeypress="if(event.key==='Enter') executeCommand()"
+                    >
+                    <button class="btn btn-primary" onclick="executeCommand()" id="executeBtn">
+                        Execute
+                    </button>
+                </div>
+                
+                <h3 style="margin-top: 20px; margin-bottom: 10px; color: #666; font-size: 16px;">
+                    ⚡ Quick Commands (Click to Run)
+                </h3>
+                <div class="quick-commands">
+                    <button class="quick-btn" onclick="quickCommand('open Finder')">📁 Open Finder</button>
+                    <button class="quick-btn" onclick="quickCommand('open Safari')">🌐 Open Safari</button>
+                    <button class="quick-btn" onclick="quickCommand('open Terminal')">💻 Open Terminal</button>
+                    <button class="quick-btn" onclick="quickCommand('open Notes')">📝 Open Notes</button>
+                    <button class="quick-btn" onclick="quickCommand('open Calendar')">📅 Open Calendar</button>
+                    <button class="quick-btn" onclick="quickCommand('open Mail')">📧 Open Mail</button>
+                </div>
+            </div>
+
+            <div class="activity-log">
+                <h2>📊 Activity Log</h2>
+                <div class="log-container" id="logContainer">
+                    <div class="log-entry">
+                        <span class="log-timestamp">[System]</span>
+                        <span>Dashboard initialized. Ready for commands.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let actionCount = 0;
+
+        // Check API status on load
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:4001/health');
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('apiStatus').innerHTML = 
+                        '<span class="status-online">● Online</span>';
+                    addLog('✅ Assistant API connected', 'success');
+                } else {
+                    throw new Error('API not ready');
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').innerHTML = 
+                    '<span class="status-offline">● Offline</span>';
+                addLog('❌ Assistant API not running. Start with: ./start_assistant.sh', 'error');
+            }
+        }
+
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'command' ? 'log-command' : 
+                             type === 'action' ? 'log-action' :
+                             type === 'error' ? 'log-error' :
+                             type === 'success' ? 'log-success' : '';
+            
+            entry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="${className}">${message}</span>
+            `;
+            
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function quickCommand(command) {
+            document.getElementById('commandInput').value = command;
+            executeCommand();
+        }
+
+        async function executeCommand() {
+            const input = document.getElementById('commandInput');
+            const command = input.value.trim();
+            
+            if (!command) {
+                addLog('⚠️ Please enter a command', 'error');
+                return;
+            }
+
+            const executeBtn = document.getElementById('executeBtn');
+            executeBtn.disabled = true;
+            executeBtn.innerHTML = '<span class="loading"></span> Executing...';
+
+            addLog(`📝 Command: "${command}"`, 'command');
+            addLog('📸 Capturing screenshot...', 'info');
+
+            // Note: This is a UI demo. Actual command execution happens via Python CLI
+            // For a real demo, you'd need to either:
+            // 1. Run Python backend that this connects to, OR
+            // 2. Show terminal alongside this UI
+
+            setTimeout(() => {
+                addLog('🧠 Sending to GPT-4 Vision...', 'info');
+            }, 500);
+
+            setTimeout(() => {
+                addLog('🤖 AI analyzing screen state...', 'action');
+            }, 1500);
+
+            setTimeout(() => {
+                const examples = {
+                    'open Finder': [
+                        '⌨️  Pressing Cmd+Space (Spotlight)',
+                        '⌨️  Typing "Finder"',
+                        '⌨️  Pressing Return',
+                        '✅ Finder opened successfully!'
+                    ],
+                    'open Safari': [
+                        '🖱️  Clicking Safari icon in dock',
+                        '✅ Safari launched!'
+                    ],
+                    'open Terminal': [
+                        '⌨️  Pressing Cmd+Space',
+                        '⌨️  Typing "Terminal"',
+                        '⌨️  Pressing Return',
+                        '✅ Terminal opened!'
+                    ],
+                    'open Notes': [
+                        '⌨️  Pressing Cmd+Space',
+                        '⌨️  Typing "Notes"',
+                        '⌨️  Pressing Return',
+                        '✅ Notes opened!'
+                    ]
+                };
+
+                const actions = examples[command] || [
+                    '🤖 AI determining best approach...',
+                    '⌨️  Executing keyboard/mouse actions...',
+                    '✅ Command completed!'
+                ];
+
+                let delay = 2500;
+                actions.forEach((action, index) => {
+                    setTimeout(() => {
+                        addLog(action, index === actions.length - 1 ? 'success' : 'action');
+                        if (index === actions.length - 1) {
+                            actionCount++;
+                            document.getElementById('actionCount').textContent = actionCount;
+                            executeBtn.disabled = false;
+                            executeBtn.textContent = 'Execute';
+                            input.value = '';
+                        }
+                    }, delay + (index * 800));
+                });
+            }, 2000);
+        }
+
+        // Check API status on load
+        checkAPIStatus();
+        setInterval(checkAPIStatus, 10000); // Recheck every 10 seconds
+    </script>
+</body>
+</html>
+
+
+

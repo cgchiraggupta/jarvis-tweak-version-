@@ -1,0 +1,18 @@
+# Configuration Example for Assistant API
+# Copy this file to .env in the same directory and fill in your values
+
+# OpenAI API Key (required)
+# Get your API key from https://platform.openai.com/api-keys
+KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Server Configuration
+HTTP_PORT=4001
+WEBSOCKET_PORT=4000
+
+# Environment
+NODE_ENV=development
+
+
+
+

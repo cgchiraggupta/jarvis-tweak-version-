@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - Voice & Computer Control Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 18px;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .panel h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-online {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .status-offline {
+            background: #ef4444;
+        }
+
+        /* Voice Panel */
+        .voice-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .mic-button {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        .mic-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
+        }
+
+        .mic-button.recording {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .voice-status {
+            font-size: 18px;
+            color: #666;
+            min-height: 30px;
+        }
+
+        .visualizer-container {
+            width: 100%;
+            background: #1f2937;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100px;
+            border-radius: 8px;
+        }
+
+        /* Computer Control Panel */
+        .quick-commands {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .command-btn {
+            padding: 15px;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .command-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .custom-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .custom-input input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .custom-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .exec-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .exec-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Activity Log */
+        .log-panel {
+            grid-column: 1 / -1;
+        }
+
+        .log-container {
+            background: #1f2937;
+            border-radius: 15px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-left: 3px solid #667eea;
+            padding-left: 15px;
+            color: #e5e7eb;
+        }
+
+        .log-voice {
+            border-left-color: #10b981;
+        }
+
+        .log-action {
+            border-left-color: #fbbf24;
+        }
+
+        .log-success {
+            border-left-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .log-error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .timestamp {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        .instructions {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .instructions h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .instructions p {
+            color: #78350f;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Assistant Demo Interface</h1>
+            <p>Voice Interaction + Computer Control • Powered by GPT-4 Vision</p>
+        </div>
+
+        <div class="instructions" id="setupInstructions">
+            <h3>🎬 Demo Setup Instructions</h3>
+            <p>
+                <strong>Before starting:</strong><br>
+                1. Make sure servers are running: <code>./start_assistant.sh</code><br>
+                2. Grant Screen Recording & Accessibility permissions<br>
+                3. Prepare terminal: <code>cd self-operating-computer && source venv/bin/activate</code>
+            </p>
+        </div>
+
+        <div class="demo-grid">
+            <!-- Voice Control Panel -->
+            <div class="panel">
+                <h2>
+                    <span class="status-indicator" id="voiceStatus"></span>
+                    🎤 Voice Control
+                </h2>
+                <div class="voice-controls">
+                    <button class="mic-button" id="micButton" onclick="toggleVoice()">
+                        🎤
+                    </button>
+                    <div class="voice-status" id="voiceText">Click to start voice chat</div>
+                    
+                    <div class="visualizer-container">
+                        <canvas id="voiceVisualizer" width="400" height="100"></canvas>
+                    </div>
+                    
+                    <div style="color: #666; font-size: 14px; margin-top: 10px; text-align: center;">
+                        Say: "Open Safari" or "Open Finder"
+                    </div>
+                </div>
+            </div>
+
+            <!-- Computer Control Panel -->
+            <div class="panel">
+                <h2>
+                    <span class="status-indicator" id="apiStatus"></span>
+                    💻 Computer Control
+                </h2>
+                
+                <div class="quick-commands">
+                    <button class="command-btn" onclick="executeCommand('open Finder')">
+                        📁 Open Finder
+                    </button>
+                    <button class="command-btn" onclick="executeCommand('open Safari')">
+                        🌐 Open Safari
+                    </button>
+                    <button class="command-btn" onclick="executeCommand('open Notes')">
+                        📝 Open Notes
+                    </button>
+                    <button class="command-btn" onclick="executeCommand('open Calendar')">
+                        📅 Open Calendar
+                    </button>
+                    <button class="command-btn" onclick="executeCommand('open Terminal')">
+                        💻 Open Terminal
+                    </button>
+                    <button class="command-btn" onclick="executeCommand('open Mail')">
+                        📧 Open Mail
+                    </button>
+                </div>
+
+                <div class="custom-input">
+                    <input 
+                        type="text" 
+                        id="customCommand" 
+                        placeholder="Type custom command..."
+                        onkeypress="if(event.key==='Enter') executeCustom()"
+                    >
+                    <button class="exec-btn" onclick="executeCustom()">Execute</button>
+                </div>
+
+                <div style="color: #666; font-size: 14px; margin-top: 15px; text-align: center;">
+                    Commands execute in terminal - check there for output!
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="panel log-panel">
+                <h2>📊 Activity Log</h2>
+                <div class="log-container" id="activityLog">
+                    <div class="log-entry">
+                        <span class="timestamp">[System]</span>
+                        Interface initialized. Ready for demo.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioQueue = [];
+
+        // Check API status
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:4001/health');
+                if (response.ok) {
+                    document.getElementById('apiStatus').className = 'status-indicator status-online';
+                    addLog('✅ Assistant API: Online', 'success');
+                }
+            } catch {
+                document.getElementById('apiStatus').className = 'status-indicator status-offline';
+                addLog('❌ API Offline - Run: ./start_assistant.sh', 'error');
+            }
+
+            // Check WebSocket
+            try {
+                const ws = new WebSocket('ws://localhost:4000/Assistant');
+                ws.onopen = () => {
+                    document.getElementById('voiceStatus').className = 'status-indicator status-online';
+                    ws.close();
+                };
+                ws.onerror = () => {
+                    document.getElementById('voiceStatus').className = 'status-indicator status-offline';
+                };
+            } catch {
+                document.getElementById('voiceStatus').className = 'status-indicator status-offline';
+            }
+        }
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('activityLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`;
+            
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function executeCommand(command) {
+            addLog(`🎯 Command: "${command}"`, 'action');
+            addLog('⚠️  Note: Execute this in terminal with venv activated:', 'info');
+            addLog(`   operate --model=assistant --prompt="${command}"`, 'info');
+            
+            // Copy to clipboard
+            const fullCommand = `operate --model=assistant --prompt="${command}"`;
+            navigator.clipboard.writeText(fullCommand).then(() => {
+                addLog('📋 Command copied to clipboard!', 'success');
+            });
+        }
+
+        function executeCustom() {
+            const input = document.getElementById('customCommand');
+            const command = input.value.trim();
+            if (command) {
+                executeCommand(command);
+                input.value = '';
+            }
+        }
+
+        function toggleVoice() {
+            if (!isRecording) {
+                connectAndRecord();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function connectAndRecord() {
+            try {
+                // Connect to WebSocket if not connected
+                if (!socket || socket.readyState !== WebSocket.OPEN) {
+                    socket = new WebSocket('ws://localhost:4000/Assistant');
+                    
+                    socket.onopen = () => {
+                        addLog('🎙️  Connected to voice assistant', 'voice');
+                        startRecording();
+                    };
+
+                    socket.onmessage = async (event) => {
+                        if (event.data instanceof Blob) {
+                            const arrayBuffer = await event.data.arrayBuffer();
+                            await playAudio(arrayBuffer);
+                        } else if (typeof event.data === 'string') {
+                            try {
+                                const data = JSON.parse(event.data);
+                                if (data.type === 'response.done') {
+                                    addLog('✅ Assistant responded', 'voice');
+                                }
+                            } catch(e) {}
+                        }
+                    };
+
+                    socket.onerror = () => {
+                        addLog('❌ Voice connection failed', 'error');
+                        document.getElementById('voiceStatus').className = 'status-indicator status-offline';
+                    };
+                } else {
+                    startRecording();
+                }
+            } catch (error) {
+                addLog('❌ Voice error: ' + error.message, 'error');
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                document.getElementById('micButton').className = 'mic-button recording';
+                document.getElementById('voiceText').textContent = '🔴 Recording... Click to stop';
+                isRecording = true;
+
+                addLog('🎙️  Listening...', 'voice');
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    processAudio();
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                visualizeAudio(stream);
+            } catch (error) {
+                addLog('❌ Microphone access denied', 'error');
+                resetVoiceUI();
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                isRecording = false;
+                resetVoiceUI();
+                addLog('🧠 Processing your voice...', 'voice');
+            }
+        }
+
+        function resetVoiceUI() {
+            document.getElementById('micButton').className = 'mic-button';
+            document.getElementById('voiceText').textContent = 'Click to start voice chat';
+        }
+
+        async function processAudio() {
+            const blob = new Blob(audioChunks, { type: 'audio/wav' });
+            const base64Audio = await convertAudioToBase64PCM(blob);
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'conversation.item.create',
+                    item: {
+                        type: 'message',
+                        role: 'user',
+                        content: [{ type: 'input_audio', audio: base64Audio }]
+                    }
+                }));
+                
+                socket.send(JSON.stringify({
+                    type: 'response.create',
+                    response: { modalities: ['text', 'audio'] }
+                }));
+            }
+        }
+
+        async function convertAudioToBase64PCM(blob) {
+            const audioCtx = new AudioContext({ sampleRate: 24000 });
+            const arrayBuffer = await blob.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            
+            const channelData = audioBuffer.getChannelData(0);
+            const pcm16 = new ArrayBuffer(channelData.length * 2);
+            const view = new DataView(pcm16);
+            
+            for (let i = 0; i < channelData.length; i++) {
+                const s = Math.max(-1, Math.min(1, channelData[i]));
+                view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+            }
+            
+            return btoa(String.fromCharCode(...new Uint8Array(pcm16)));
+        }
+
+        async function playAudio(arrayBuffer) {
+            const audioContext = new AudioContext();
+            const buffer = await audioContext.decodeAudioData(arrayBuffer);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+            
+            addLog('🔊 Assistant speaking...', 'voice');
+        }
+
+        function visualizeAudio(stream) {
+            const audioContext = new AudioContext();
+            const analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            const canvas = document.getElementById('voiceVisualizer');
+            const ctx = canvas.getContext('2d');
+            
+            function draw() {
+                if (!isRecording) return;
+                requestAnimationFrame(draw);
+                
+                analyser.getByteFrequencyData(dataArray);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const barWidth = canvas.width / bufferLength;
+                let x = 0;
+                
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+                    ctx.fillStyle = `rgb(16, 185, ${129 + dataArray[i] / 5})`;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+                    x += barWidth;
+                }
+            }
+            
+            draw();
+        }
+
+        // Initialize
+        checkStatus();
+        setInterval(checkStatus, 5000);
+        
+        // Add welcome message
+        setTimeout(() => {
+            addLog('👋 Welcome! Choose voice or click commands to control your computer', 'success');
+        }, 500);
+    </script>
+</body>
+</html>
+
+
+
